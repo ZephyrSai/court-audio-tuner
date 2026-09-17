@@ -4,7 +4,9 @@ Browser workbench for tuning the noise suppression used by the F4E live-stream A
 Loops a court recording, A/Bs the processed audio against the original, and exports a config
 JSON that maps 1:1 onto the app's `SpectralNoiseSuppressor`.
 
-Everything runs client-side (Web Audio API); nothing is uploaded anywhere.
+**Live: https://zephyrsai.github.io/court-audio-tuner/**
+
+Everything runs client-side (Web Audio API); nothing is uploaded anywhere — a WAV you drop in is decoded in your browser only.
 
 ## Use
 
