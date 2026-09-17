@@ -1,0 +1,184 @@
+<meta charset="utf-8">
+<title>Court Audio Tuner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f2ee;--panel:#ffffff;--panel2:#eceae4;--line:#d9d6ce;--text:#1c1f25;--muted:#5f6672;
+  --accent:#b7761b;--accent-soft:#f1e3cb;--good:#2f8f4e;--bad:#c2463f;--orig:#4d7cc2;--proc:#b7761b;
+  --track:#dcd9d1;--focus:#b7761b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14161a;--panel:#1c1f25;--panel2:#22262d;--line:#2d323b;--text:#e6e8ec;--muted:#8b919c;
+    --accent:#e8a33d;--accent-soft:#3a2d17;--good:#5cc27a;--bad:#e0605c;--orig:#6ea2ea;--proc:#e8a33d;
+    --track:#2d323b;--focus:#e8a33d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14161a;--panel:#1c1f25;--panel2:#22262d;--line:#2d323b;--text:#e6e8ec;--muted:#8b919c;
+  --accent:#e8a33d;--accent-soft:#3a2d17;--good:#5cc27a;--bad:#e0605c;--orig:#6ea2ea;--proc:#e8a33d;
+  --track:#2d323b;--focus:#e8a33d;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.45;padding-inline:16px;padding-block:0 32px}
+.mono,.num,input,select,button,textarea{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+h1{font-size:18px;font-weight:600;margin:0;letter-spacing:.01em}
+h2{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.sub{color:var(--muted);font-size:12px}
+.transport{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.transport .grow{flex:1 1 220px}
+button{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#14161a;font-weight:600}
+button.ab{min-width:150px}
+button.ab[data-state="proc"]{border-color:var(--proc);color:var(--proc)}
+button.ab[data-state="orig"]{border-color:var(--orig);color:var(--orig)}
+.pos{display:flex;align-items:center;gap:8px}
+.pos input[type=range]{flex:1}
+.grid{display:grid;grid-template-columns:300px minmax(0,1fr) 300px;gap:16px;margin-top:16px}
+@media (max-width:1100px){.grid{grid-template-columns:1fr 1fr}.col-mid{grid-column:1 / -1;order:-1}}
+@media (max-width:700px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
+.row label{color:var(--text)}
+.row .num{color:var(--muted);min-width:64px;text-align:right;font-size:12px}
+.knob{display:grid;grid-template-columns:1fr 60px;gap:8px;align-items:center;margin:8px 0}
+.knob .lab{display:flex;justify-content:space-between;align-items:baseline}
+.knob .lab span:last-child{color:var(--muted);font-size:11px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--track);border-radius:2px;margin:8px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);cursor:pointer}
+input[type=number]{width:60px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:4px 6px;font-size:12px;text-align:right}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:6px 8px;font-size:13px;width:100%}
+.bands{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;overflow-x:auto}
+.band{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border-radius:6px;background:var(--panel2)}
+.band .f{font-size:10px;color:var(--muted);white-space:nowrap}
+.band .v{font-size:11px;min-width:2.5em;text-align:center}
+input[type=range].vslider{-webkit-appearance:none;appearance:none;writing-mode:vertical-lr;direction:rtl;width:18px;height:120px;margin:4px 0;background:linear-gradient(to right,transparent 7px,var(--track) 7px,var(--track) 11px,transparent 11px);border-radius:0}
+input[type=range].vslider::-webkit-slider-thumb{width:14px;height:14px;margin:0}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+canvas{width:100%;display:block;border-radius:6px;background:var(--panel2)}
+.metrics{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
+.metrics .k{color:var(--muted)}
+.metrics .v{text-align:right}
+.good{color:var(--good)}.bad{color:var(--bad)}
+textarea{width:100%;height:150px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px;font-size:11px;resize:vertical}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:12px;color:var(--muted);border-left:2px solid var(--accent);padding-left:10px;margin-top:10px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;background:var(--accent-soft);color:var(--accent);margin-left:6px}
+.drop{border:1px dashed var(--line);border-radius:6px;padding:8px;text-align:center;font-size:12px;color:var(--muted)}
+.drop input{display:none}
+.hidden{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="transport">
+  <div>
+    <h1>Court Audio Tuner</h1>
+    <div class="sub">Noise-suppression workbench for the F4E stream · loops the sample, A/B against the original, export the config</div>
+  </div>
+  <button id="playBtn" class="primary">▶ Play loop</button>
+  <button id="abBtn" class="ab" data-state="proc">Hearing: PROCESSED</button>
+  <div class="pos grow">
+    <span class="num mono" id="posLabel">0.00 s</span>
+    <input type="range" id="posSlider" min="0" max="30" step="0.01" value="0" aria-label="Playhead">
+    <span class="num mono" id="durLabel">30.00 s</span>
+  </div>
+  <div class="pos" style="min-width:230px">
+    <span class="sub">Loop</span>
+    <input type="number" id="loopStart" min="0" step="0.1" value="0" aria-label="Loop start (s)"> –
+    <input type="number" id="loopEnd" min="0" step="0.1" value="30" aria-label="Loop end (s)">
+    <span class="sub">s</span>
+  </div>
+  <span class="sub mono" id="status">decoding sample…</span>
+</div>
+
+<div class="grid">
+  <div class="stack">
+    <div class="panel">
+      <h2>Algorithm</h2>
+      <select id="algo" aria-label="Algorithm">
+        <option value="expander">Multiband expander (gain constant in noise; opens on content)</option>
+        <option value="bandwiener">Band-wise Wiener (smoothed, decision-directed)</option>
+        <option value="eq">Static EQ only (low-cut + band gains, zero artifacts)</option>
+        <option value="perbin">Per-bin Wiener — the OLD crackly one, for reference</option>
+        <option value="off">Off (original)</option>
+      </select>
+      <div class="note" id="algoNote"></div>
+    </div>
+    <div class="panel">
+      <h2>Global</h2>
+      <div id="globalKnobs"></div>
+    </div>
+    <div class="panel">
+      <h2>Presets</h2>
+      <div class="btnrow" id="presetRow"></div>
+      <div class="btnrow" style="margin-top:8px">
+        <button id="savePreset">Save current as preset</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+      <div class="sub" style="margin-top:8px">Saved presets live in this browser only.</div>
+    </div>
+    <div class="panel">
+      <h2>Sample</h2>
+      <label class="drop">Drop or choose another WAV/M4A to tune on<input type="file" id="fileInput" accept="audio/*"></label>
+      <div class="sub mono" id="sampleInfo" style="margin-top:6px">1-original.wav · 44.1 kHz · mono · 30.0 s</div>
+    </div>
+  </div>
+
+  <div class="stack col-mid">
+    <div class="panel">
+      <h2>Per-band controls <span class="pill">applies to the selected algorithm</span></h2>
+      <div class="sub" style="margin-bottom:8px">Top row: extra suppression per band (dB, added to the global floor; drag up = suppress more). Bottom row: static EQ trim per band (dB).</div>
+      <div class="bands" id="floorBands"></div>
+      <div style="height:10px"></div>
+      <div class="bands" id="eqBands"></div>
+      <div class="btnrow" style="margin-top:10px"><button id="zeroBands">Zero all band trims</button></div>
+    </div>
+    <div class="panel">
+      <h2>Live spectrum</h2>
+      <div class="legend"><span><i style="background:var(--orig)"></i>original</span><span><i style="background:var(--proc)"></i>processed</span><span class="mono">20 Hz – 16 kHz, 1/3-oct smoothed, dB</span></div>
+      <canvas id="spec" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Gain map <span class="pill">what the suppressor did</span></h2>
+      <div class="sub" style="margin-bottom:6px">Time → across, 0–12 kHz up. Dark = attenuated to the floor, bright = passed through. Speckle here = crackle. Smooth vertical stripes = ball hits let through.</div>
+      <canvas id="gainmap" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <h2>Measurements</h2>
+      <div class="metrics" id="metrics"></div>
+      <div class="note">Blips = isolated one-frame gain jumps ≥ 6 dB in 2–12 kHz, per-mille of cells. The old crackly files measured 16–55 ‰; the original is 0.</div>
+    </div>
+    <div class="panel">
+      <h2>Config <span class="pill">paste this back to Claude</span></h2>
+      <textarea id="cfgOut" readonly aria-label="Configuration JSON"></textarea>
+      <div class="btnrow" style="margin-top:8px">
+        <button id="copyCfg" class="primary">Copy config</button>
+        <button id="loadCfg">Load from clipboard</button>
+      </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button id="saveWav">Save processed audio</button>
+        <label class="sub" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="saveLoopOnly"> loop region only</label>
+      </div>
+      <div class="sub" style="margin-top:4px">Saves a .zip with the processed 16-bit WAV and the config that made it.</div>
+      <div class="sub mono" id="copyStatus" style="margin-top:6px"></div>
+    </div>
+    <div class="panel">
+      <h2>How to use</h2>
+      <ol style="margin:0;padding-left:18px;font-size:13px">
+        <li>Press <b>Play loop</b>. Toggle <b>Hearing</b> to A/B the original at the same playhead.</li>
+        <li>Pick an algorithm. Start with the <b>expander</b>; raise <b>Floor</b> until the hum is gone, back off if anything gets "underwater".</li>
+        <li>Use the band strips to suppress the hum region harder or protect the 2–8 kHz ball-hit region.</li>
+        <li>Narrow the <b>Loop</b> to a 3–5 s stretch with a hit and voice to judge attacks.</li>
+        <li><b>Copy config</b> and paste it in chat — it maps 1:1 onto the Android implementation.</li>
+      </ol>
+    </div>
+  </div>
+</div>
